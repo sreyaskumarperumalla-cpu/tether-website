@@ -1,84 +1,1216 @@
-//this is the first copy
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TETHERED — Better Together</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
-    <!-- Link to external CSS -->
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TETHERED — Two Players. One Chain. No Escape.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a1a18;
+    --bg2: #222220;
+    --surface: #2a2a27;
+    --border: #383835;
+    --neon-pink: #ff2d78;
+    --neon-green: #39ff57;
+    --pink-glow: rgba(255, 45, 120, 0.4);
+    --green-glow: rgba(57, 255, 87, 0.4);
+    --text: #e8e4d8;
+    --muted: #888880;
+    --gold: #c8a84b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* SCANLINE OVERLAY */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ====== HERO ====== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 40px 20px;
+  }
+
+  .hero-bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+  }
+
+  .hero-bg-grid::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%,
+      transparent 20%,
+      var(--bg) 100%);
+  }
+
+  /* floating glow orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    animation: drift 8s ease-in-out infinite alternate;
+  }
+  .orb-pink {
+    width: 400px; height: 400px;
+    background: var(--pink-glow);
+    top: -100px; left: -100px;
+    animation-delay: 0s;
+  }
+  .orb-green {
+    width: 350px; height: 350px;
+    background: var(--green-glow);
+    bottom: -80px; right: -80px;
+    animation-delay: -4s;
+  }
+
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(60px, 40px) scale(1.1); }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(48px, 10vw, 110px);
+    line-height: 1;
+    letter-spacing: -2px;
+    background: linear-gradient(180deg,
+      #fff 0%,
+      var(--text) 40%,
+      var(--muted) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fadeUp 0.6s 0.1s ease both;
+    position: relative;
+  }
+
+  .hero-title .t-pink { -webkit-text-fill-color: var(--neon-pink); filter: drop-shadow(0 0 20px var(--neon-pink)); }
+  .hero-title .t-green { -webkit-text-fill-color: var(--neon-green); filter: drop-shadow(0 0 20px var(--neon-green)); }
+
+  .hero-chain-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 32px 0 28px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  /* Pixel art sprite frames using canvas-drawn backgrounds */
+  .sprite-container {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .player-sprite {
+    width: 64px;
+    height: 40px;
+    image-rendering: pixelated;
+    animation: bounce 0.8s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 12px currentColor);
+  }
+  .player-pink { animation-delay: 0s; color: var(--neon-pink); }
+  .player-green { animation-delay: -0.4s; color: var(--neon-green); }
+
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-8px); }
+  }
+
+  .chain-visual {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px;
+  }
+
+  .chain-link {
+    width: 8px; height: 8px;
+    background: var(--muted);
+    border-radius: 2px;
+    animation: chainPulse 1.2s ease-in-out infinite;
+  }
+  .chain-link:nth-child(even) { animation-delay: -0.6s; }
+
+  @keyframes chainPulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); background: var(--gold); }
+  }
+
+  .hero-tagline {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(9px, 2vw, 13px);
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    line-height: 1.8;
+    animation: fadeUp 0.6s 0.3s ease both;
+    max-width: 600px;
+  }
+  .hero-tagline .hl-pink { color: var(--neon-pink); }
+  .hero-tagline .hl-green { color: var(--neon-green); }
+
+  .hero-cta-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    animation: fadeUp 0.6s 0.4s ease both;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    padding: 14px 28px;
+    border: 2px solid;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.15s;
+    image-rendering: pixelated;
+    position: relative;
+    letter-spacing: 0.05em;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(255,255,255,0.1);
+    pointer-events: none;
+  }
+
+  .btn-pink {
+    background: var(--neon-pink);
+    border-color: var(--neon-pink);
+    color: #000;
+    box-shadow: 0 0 30px var(--pink-glow), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .btn-pink:hover {
+    background: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 60px var(--pink-glow);
+    transform: translateY(-2px);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+  .btn-outline:hover {
+    background: var(--neon-green);
+    color: #000;
+    box-shadow: 0 0 60px var(--green-glow);
+    transform: translateY(-2px);
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    animation: fadeUp 0.6s 0.8s ease both, pulse 2s 1s ease infinite;
+    font-family: 'Press Start 2P', monospace;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  /* ====== SECTION BASE ====== */
+  section {
+    padding: 100px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .section-label.pink { color: var(--neon-pink); }
+  .section-label.green { color: var(--neon-green); }
+
+  .section-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(20px, 4vw, 36px);
+    line-height: 1.4;
+    margin-bottom: 48px;
+  }
+
+  /* ====== DIVIDER ====== */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--neon-pink) 20%,
+      var(--neon-green) 80%,
+      transparent);
+    opacity: 0.5;
+  }
+
+  /* ====== HOW IT WORKS ====== */
+  .how-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 100px 24px;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .step-card {
+    background: var(--bg2);
+    padding: 40px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s;
+  }
+
+  .step-card:hover { background: var(--surface); }
+
+  .step-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .step-card.c-pink::before { background: var(--neon-pink); box-shadow: 0 0 20px var(--pink-glow); }
+  .step-card.c-green::before { background: var(--neon-green); box-shadow: 0 0 20px var(--green-glow); }
+  .step-card.c-gold::before { background: var(--gold); }
+
+  .step-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 36px;
+    color: var(--border);
+    margin-bottom: 24px;
+  }
+  .step-card.c-pink:hover .step-num { color: var(--neon-pink); }
+  .step-card.c-green:hover .step-num { color: var(--neon-green); }
+  .step-card.c-gold:hover .step-num { color: var(--gold); }
+
+  .step-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ====== ENEMIES SECTION ====== */
+  .enemies-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 100px 24px;
+  }
+
+  .enemies-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+
+  @media (max-width: 700px) {
+    .enemies-layout { grid-template-columns: 1fr; }
+  }
+
+  .enemies-info { }
+
+  .enemy-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .enemy-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    transition: all 0.2s;
+  }
+
+  .enemy-item:hover {
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 20px rgba(255,45,120,0.15);
+  }
+
+  .enemy-dot {
+    width: 8px; height: 8px;
+    background: var(--neon-pink);
+    flex-shrink: 0;
+    margin-top: 5px;
+    box-shadow: 0 0 8px var(--neon-pink);
+    animation: blink 2s ease infinite;
+  }
+  .enemy-dot.green { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation-delay: -1s; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .enemy-text strong {
+    display: block;
+    font-size: 11px;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+  }
+
+  .enemy-text span { font-size: 12px; color: var(--muted); }
+
+  /* sprite showcase box */
+  .sprite-box {
+    background: var(--bg2);
+    border: 2px solid var(--border);
+    border-radius: 0;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sprite-box::before {
+    content: 'SPRITE SHEET';
+    position: absolute;
+    top: 12px; left: 16px;
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 0.3em;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .sprite-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .sprite-img {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .sprite-label {
+    font-size: 9px;
+    color: var(--muted);
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.2em;
+    margin-top: 8px;
+  }
+
+  .sprite-unit { display: flex; flex-direction: column; align-items: center; }
+
+  /* ====== POWERUPS ====== */
+  .powerups-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 100px 24px;
+  }
+
+  .powerups-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+    margin-top: 48px;
+  }
+
+  @media (max-width: 600px) {
+    .powerups-grid { grid-template-columns: 1fr; }
+  }
+
+  .powerup-card {
+    background: var(--bg2);
+    padding: 36px 24px;
+    text-align: center;
+    transition: background 0.2s;
+    position: relative;
+  }
+  .powerup-card:hover { background: var(--surface); }
+
+  .powerup-icon {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 28px;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .powerup-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    margin-bottom: 12px;
+  }
+
+  .powerup-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .powerup-card .tag {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 9px;
+    padding: 4px 10px;
+    font-family: 'Press Start 2P', monospace;
+  }
+  .tag-pink { background: rgba(255,45,120,0.15); color: var(--neon-pink); border: 1px solid var(--neon-pink); }
+  .tag-green { background: rgba(57,255,87,0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
+  .tag-gold { background: rgba(200,168,75,0.15); color: var(--gold); border: 1px solid var(--gold); }
+
+  /* ====== RESOURCE SYSTEM ====== */
+  .resource-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 80px 24px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .resource-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 48px;
+  }
+
+  @media (max-width: 600px) { .resource-grid { grid-template-columns: 1fr; } }
+
+  .resource-card {
+    padding: 32px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .resource-card.pink { border-color: rgba(255,45,120,0.4); }
+  .resource-card.green { border-color: rgba(57,255,87,0.4); }
+
+  .resource-card.pink::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, var(--pink-glow), transparent 70%);
+  }
+
+  .resource-card.green::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, var(--green-glow), transparent 70%);
+  }
+
+  .resource-icon-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .resource-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+  }
+
+  .resource-name.pink { color: var(--neon-pink); }
+  .resource-name.green { color: var(--neon-green); }
+
+  .resource-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ====== FOOTER / CTA ====== */
+  .final-cta {
+    padding: 120px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .final-cta-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 50%, rgba(255,45,120,0.12), transparent),
+      radial-gradient(ellipse 60% 50% at 70% 50%, rgba(57,255,87,0.12), transparent);
+  }
+
+  .final-cta-content {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .final-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(18px, 4vw, 36px);
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .final-sub {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 48px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ====== NAV ====== */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(26,26,24,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: var(--text);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+  }
+  .nav-logo span.p { color: var(--neon-pink); }
+  .nav-logo span.g { color: var(--neon-green); }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 9px;
+    font-family: 'Press Start 2P', monospace;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.15s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  @media (max-width: 500px) { .nav-links { display: none; } }
+
+  /* ====== FOOTER ====== */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.2em;
+  }
+
+  footer span.p { color: var(--neon-pink); }
+  footer span.g { color: var(--neon-green); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* chain animation for hero */
+  .hero-chain-animated {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(90deg,
+      transparent 0%,
+      var(--gold) 40%,
+      var(--gold) 60%,
+      transparent 100%);
+    animation: chainSlide 3s linear infinite;
+    opacity: 0.3;
+  }
+
+  @keyframes chainSlide {
+    from { background-position: -100% 0; }
+    to { background-position: 100% 0; }
+  }
+
+  .wave-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    margin-bottom: 24px;
+    font-size: 9px;
+    font-family: 'Press Start 2P', monospace;
+    color: var(--muted);
+    animation: fadeUp 0.6s 0s ease both;
+  }
+
+  .wave-badge .dot { width: 6px; height: 6px; background: var(--neon-green); animation: blink 1s ease infinite; }
+
+  /* health bar visual */
+  .health-bar-container {
+    margin-top: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 8px;
+    position: relative;
+  }
+  .health-bar {
+    height: 12px;
+    background: linear-gradient(90deg, #c0392b, #e74c3c);
+    position: relative;
+    overflow: hidden;
+    transition: width 1s;
+  }
+  .health-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s ease infinite;
+  }
+  @keyframes shimmer { to { left: 200%; } }
+
+  .health-label { font-size: 9px; color: var(--muted); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; }
+
+  /* pixel corners */
+  .px-corner {
+    position: relative;
+  }
+  .px-corner::before, .px-corner::after {
+    content: '';
+    position: absolute;
+    width: 8px; height: 8px;
+    border-color: var(--neon-pink);
+    border-style: solid;
+  }
+  .px-corner::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .px-corner::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  /* enemy rotate animation */
+  .rotate-slow { animation: rotateSlow 20s linear infinite; }
+  @keyframes rotateSlow { to { transform: rotate(360deg); } }
+
+  /* chain sprite used in hero */
+  .chain-sprites {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cs { width: 10px; height: 10px; background: #888; border-radius: 1px; position: relative; }
+  .cs:nth-child(2n) { transform: rotate(90deg); }
+
+  /* sprite sheet display */
+  .ss-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ss-frame {
+    image-rendering: pixelated;
+    border: 1px solid var(--border);
+    padding: 4px;
+    background: #111;
+  }
+
+  .anim-float {
+    animation: floatY 3s ease-in-out infinite;
+  }
+  @keyframes floatY {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .highlight-box {
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-top: 32px;
+    position: relative;
+    background: var(--bg2);
+  }
+
+  .highlight-box .hb-label {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg2);
+    padding: 0 8px;
+    font-size: 9px;
+    font-family: 'Press Start 2P', monospace;
+    color: var(--neon-green);
+  }
+
+  /* visible sprite images from uploaded files */
+  .real-sprite {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+</style>
 </head>
 <body>
 
-    <!-- Custom Cursor Elements -->
-    <div class="cursor"></div>
-    <div class="cursor-ring"></div>
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">TETH<span class="p">E</span>R<span class="g">E</span>D</a>
+  <ul class="nav-links">
+    <li><a href="#how">HOW TO PLAY</a></li>
+    <li><a href="#enemies">ENEMIES</a></li>
+    <li><a href="#powerups">POWERUPS</a></li>
+    <li><a href="#play">PLAY NOW</a></li>
+  </ul>
+</nav>
 
-    <!-- Background Canvas -->
-    <canvas id="bg-canvas"></canvas>
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="orb orb-pink"></div>
+  <div class="orb orb-green"></div>
 
-    <nav>
-        <div class="nav-logo">TETHERED</div>
-        <ul class="nav-links">
-            <li><a href="#hero">Home</a></li>
-            <li><a href="#about">The Link</a></li>
-            <li><a href="#">Mechanics</a></li>
-        </ul>
-    </nav>
+  <div class="hero-content">
+    <div class="wave-badge">
+      <div class="dot"></div>
+      CO-OP SURVIVAL · WAVE DEFENSE · 2 PLAYERS
+    </div>
 
-    <main>
-        <section id="hero">
-            <span class="hero-tagline">Stronger as One</span>
-            <h1 class="hero-title">TETHERED</h1>
-            
-            <div class="hero-chain">
-                <div class="player-dot"></div>
-                <div class="chain-line"></div>
-                <div class="player-dot"></div>
-            </div>
+    <div class="hero-eyebrow">A GAME ABOUT CONNECTION</div>
 
-            <p class="hero-subtitle">Experience the co-op adventure where your only lifeline is each other. Pull, swing, and survive the depth.</p>
+    <h1 class="hero-title">TETHERED</h1>
 
-            <div class="hero-btns">
-                <a href="#" class="btn-primary">Download Demo</a>
-                <a href="#about" class="btn-secondary">The Link</a>
-            </div>
+    <!-- Sprite row: pink slime · chain · green slime -->
+    <div class="hero-chain-row">
+      <!-- Pink slime - frame 1 (left quarter of sprite sheet) -->
+      <div class="sprite-container player-pink">
+        <canvas id="pinkCanvas" width="64" height="40" class="sprite-img"></canvas>
+      </div>
 
-            <div class="scroll-hint">Scroll to explore</div>
-        </section>
+      <!-- Chain visual -->
+      <div class="chain-visual">
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+        <div class="chain-link"></div>
+      </div>
 
-        <div class="divider"></div>
+      <!-- Green slime -->
+      <div class="sprite-container player-green">
+        <canvas id="greenCanvas" width="64" height="40" class="sprite-img"></canvas>
+      </div>
+    </div>
 
-        <section id="about">
-            <div class="about-content">
-                <span class="section-label">01. The Mechanic</span>
-                <h2>The Unbreakable Bond</h2>
-                <p>In TETHERED, physics is your greatest ally and your most dangerous enemy. Connected by a luminous energy chain, you must coordinate every movement to solve puzzles and scale impossible heights.</p>
-            </div>
-            <div class="about-visual">
-                <div class="about-ring ring-1"></div>
-                <div class="about-ring ring-2"></div>
-                <div class="about-ring ring-3"></div>
-                <div class="p1-icon">1</div>
-                <div class="p2-icon">2</div>
-            </div>
-        </section>
-    </main>
+    <p class="hero-tagline">
+      Two players. <span class="hl-pink">One chain.</span> Infinite waves.<br>
+      Trap enemies between you — or <span class="hl-green">die together.</span>
+    </p>
 
-    <script>
-        // Basic Cursor Script to make the cursor work
-        const cursor = document.querySelector('.cursor');
-        const ring = document.querySelector('.cursor-ring');
-        
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-            ring.style.left = e.clientX + 'px';
-            ring.style.top = e.clientY + 'px';
-        });
-    </script>
+    <div class="hero-cta-row">
+      <a href="#play" class="btn btn-pink">▶ PLAY NOW</a>
+      <a href="#how" class="btn btn-outline">HOW TO PLAY</a>
+    </div>
+  </div>
+
+  <div class="scroll-hint">▼ SCROLL ▼</div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div id="how" class="how-wrap">
+  <div class="section-label pink">// MECHANICS</div>
+  <h2 class="section-title">HOW TO<br>SURVIVE</h2>
+
+  <div class="steps-grid">
+    <div class="step-card c-pink">
+      <div class="step-num">01</div>
+      <div class="step-title">STAY<br>CONNECTED</div>
+      <p class="step-desc">You and your partner are bound by a chain. Move apart to stretch it — move together to let enemies slip past. Distance is your weapon.</p>
+    </div>
+    <div class="step-card c-green">
+      <div class="step-num">02</div>
+      <div class="step-title">TRAP &amp;<br>DESTROY</div>
+      <p class="step-desc">Position so the chain catches enemies between you. Contact kills — but only when they're fully ensnared. Coordination is everything.</p>
+    </div>
+    <div class="step-card c-gold">
+      <div class="step-num">03</div>
+      <div class="step-title">SURVIVE<br>THE WAVE</div>
+      <p class="step-desc">Enemies come in increasingly brutal waves. Collect power-ups, spend shared gold, and keep your shared health pool above zero.</p>
+    </div>
+    <div class="step-card c-pink">
+      <div class="step-num">04</div>
+      <div class="step-title">SPEND<br>WISELY</div>
+      <p class="step-desc">Every kill earns shared gold. Agree on upgrades — both players draw from the same pool. Greed kills. Generosity wins.</p>
+    </div>
+  </div>
+
+  <!-- Shared resource visualization -->
+  <div class="highlight-box" style="margin-top:40px;">
+    <span class="hb-label">SHARED RESOURCE SYSTEM</span>
+    <div class="resource-grid" style="margin-top:16px;">
+      <div>
+        <div class="health-label">❤ SHARED HEALTH</div>
+        <div class="health-bar-container">
+          <div class="health-bar" id="hbar" style="width:70%;"></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7;">Both players share one health pool. When it hits zero, the run ends for both — no solo saves.</p>
+      </div>
+      <div>
+        <div class="health-label" style="color:var(--gold);">◆ SHARED GOLD</div>
+        <div class="health-bar-container">
+          <div class="health-bar" style="width:45%;background:linear-gradient(90deg,#a0782a,var(--gold));"></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7;">Kills award gold to the shared pool. Either player can spend it — trust your partner.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ENEMIES -->
+<div id="enemies" class="enemies-wrap">
+  <div class="section-label pink">// THREATS</div>
+  <h2 class="section-title">KNOW YOUR<br>ENEMIES</h2>
+
+  <div class="enemies-layout">
+    <div class="enemies-info">
+      <p style="font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:32px;">
+        Creatures from the deep emerge in relentless waves. Each type has a unique movement pattern — learn them or perish.
+      </p>
+
+      <ul class="enemy-list">
+        <li class="enemy-item">
+          <div class="enemy-dot"></div>
+          <div class="enemy-text">
+            <strong>THE SHAMBLER</strong>
+            <span>Slow, predictable. Moves in straight lines toward the nearest player. Easy to trap — watch for groups.</span>
+          </div>
+        </li>
+        <li class="enemy-item">
+          <div class="enemy-dot green"></div>
+          <div class="enemy-text">
+            <strong>THE DARTER</strong>
+            <span>Fast and erratic. Changes direction unpredictably. Requires both players to anticipate its path.</span>
+          </div>
+        </li>
+        <li class="enemy-item">
+          <div class="enemy-dot"></div>
+          <div class="enemy-text">
+            <strong>THE BEHEMOTH</strong>
+            <span>Large and armored. Takes multiple chain wraps to eliminate. Tanks through careless formations.</span>
+          </div>
+        </li>
+        <li class="enemy-item">
+          <div class="enemy-dot green"></div>
+          <div class="enemy-text">
+            <strong>THE SWARM</strong>
+            <span>Dozens of tiny enemies moving in formation. Chain must be swept through the group rapidly.</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Sprite box showing uploaded sprites -->
+    <div class="sprite-box px-corner">
+      <div style="display:flex;flex-direction:column;gap:24px;width:100%;align-items:center;">
+
+        <div class="sprite-unit">
+          <img src="/mnt/user-data/uploads/enemy.png"
+               class="real-sprite"
+               style="height:80px;width:auto;filter:drop-shadow(0 0 8px rgba(200,168,75,0.6));"
+               alt="Enemy sprite sheet">
+          <div class="sprite-label">ENEMY · 5 ANIMATION FRAMES</div>
+        </div>
+
+        <div style="width:100%;height:1px;background:var(--border);"></div>
+
+        <div class="sprite-unit">
+          <img src="/mnt/user-data/uploads/green_slime.png"
+               class="real-sprite"
+               style="height:64px;width:auto;filter:drop-shadow(0 0 10px rgba(57,255,87,0.5));"
+               alt="Green slime">
+          <div class="sprite-label" style="color:var(--neon-green);">PLAYER 2 · GREEN SLIME</div>
+        </div>
+
+        <div class="sprite-unit">
+          <img src="/mnt/user-data/uploads/pink_slime.png"
+               class="real-sprite"
+               style="height:64px;width:auto;filter:drop-shadow(0 0 10px rgba(255,45,120,0.5));"
+               alt="Pink slime">
+          <div class="sprite-label" style="color:var(--neon-pink);">PLAYER 1 · PINK SLIME</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- POWERUPS -->
+<div id="powerups" class="powerups-wrap">
+  <div class="section-label green">// ITEMS</div>
+  <h2 class="section-title">POWERUPS &amp;<br>PICKUPS</h2>
+
+  <div style="display:flex;justify-content:center;margin-bottom:40px;">
+    <img src="/mnt/user-data/uploads/powerups.png"
+         class="real-sprite anim-float"
+         style="height:80px;width:auto;filter:drop-shadow(0 0 16px rgba(57,255,87,0.4));"
+         alt="Power-up items">
+  </div>
+
+  <div class="powerups-grid">
+    <div class="powerup-card">
+      <span class="powerup-icon">🍎</span>
+      <div class="powerup-name">RED APPLE</div>
+      <p class="powerup-desc">Restores a chunk of your shared health pool. Prioritize when both players are low.</p>
+      <span class="tag tag-pink">+HEALTH</span>
+    </div>
+    <div class="powerup-card">
+      <span class="powerup-icon">🍐</span>
+      <div class="powerup-name">GOLDEN PEAR</div>
+      <p class="powerup-desc">Grants a burst of shared gold. Appear rarely — agree on how to spend before picking up.</p>
+      <span class="tag tag-gold">+GOLD</span>
+    </div>
+    <div class="powerup-card">
+      <span class="powerup-icon">🍌</span>
+      <div class="powerup-name">BANANA</div>
+      <p class="powerup-desc">Temporarily extends your chain length, letting you trap larger groups with one sweep.</p>
+      <span class="tag tag-green">+RANGE</span>
+    </div>
+  </div>
+
+  <!-- Chain sprite showcase -->
+  <div style="margin-top:48px;text-align:center;">
+    <div class="section-label" style="margin-bottom:16px;">// THE CHAIN</div>
+    <img src="/mnt/user-data/uploads/chain.png"
+         class="real-sprite"
+         style="height:70px;width:auto;filter:drop-shadow(0 0 12px rgba(200,168,75,0.5));"
+         alt="Chain sprite">
+    <p style="font-size:12px;color:var(--muted);margin-top:16px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.8;">
+      The chain is your bond — and your weapon. Stretch it between enemies, sweep it through crowds, or let it snap tight to finish off trapped foes.
+    </p>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- HEALTH SYSTEM callout -->
+<div class="resource-wrap" style="max-width:100%;padding:80px 24px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-label pink">// RESOURCES</div>
+    <h2 class="section-title">SHARED<br>FATE</h2>
+
+    <div class="resource-grid">
+      <div class="resource-card pink">
+        <div class="resource-icon-row">
+          <img src="/mnt/user-data/uploads/health.png"
+               class="real-sprite"
+               style="height:48px;width:auto;filter:drop-shadow(0 0 8px #c0392b);"
+               alt="Health icon">
+          <div class="resource-name pink">ENERGY</div>
+        </div>
+        <p class="resource-desc">A single shared health pool for both players. No revives, no second chances — when energy runs out, the run is over. Watch each other's backs.</p>
+        <div style="margin-top:20px;display:flex;gap:4px;">
+          <div style="width:16px;height:16px;background:#e74c3c;box-shadow:0 0 8px #e74c3c;"></div>
+          <div style="width:16px;height:16px;background:#e74c3c;box-shadow:0 0 8px #e74c3c;"></div>
+          <div style="width:16px;height:16px;background:#e74c3c;box-shadow:0 0 8px #e74c3c;"></div>
+          <div style="width:16px;height:16px;background:#7f2020;"></div>
+          <div style="width:16px;height:16px;background:#7f2020;"></div>
+        </div>
+      </div>
+      <div class="resource-card green">
+        <div class="resource-icon-row">
+          <div style="font-size:36px;">◆</div>
+          <div class="resource-name green">GOLD</div>
+        </div>
+        <p class="resource-desc">Earned from every enemy defeated. Pooled between both players — upgrades, powerup slots, and chain enhancements all draw from here. Communicate.</p>
+        <div style="margin-top:20px;font-family:'Press Start 2P',monospace;font-size:18px;color:var(--gold);">
+          ◆◆◆◆◆◆◆
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOOR TEXTURE BAND -->
+<div style="width:100%;height:80px;overflow:hidden;opacity:0.3;border-top:1px solid var(--border);">
+  <img src="/mnt/user-data/uploads/floor.png"
+       class="real-sprite"
+       style="width:100%;height:80px;object-fit:cover;"
+       alt="Floor texture">
+</div>
+
+<!-- FINAL CTA -->
+<div id="play" class="final-cta">
+  <div class="final-cta-bg"></div>
+  <div class="final-cta-content">
+    <div class="section-label green" style="margin-bottom:24px;">// READY?</div>
+    <h2 class="final-title">
+      CONNECT.<br>
+      <span style="color:var(--neon-pink);">SURVIVE.</span><br>
+      <span style="color:var(--neon-green);">CONQUER.</span>
+    </h2>
+    <p class="final-sub">
+      Grab a friend, pick your color, and find out what you're made of when the chain is all that stands between you and the void.
+    </p>
+    <div class="hero-cta-row" style="justify-content:center;">
+      <a href="#" class="btn btn-pink">▶ PLAY FREE</a>
+      <a href="#" class="btn btn-outline">WISHLIST</a>
+    </div>
+    <p style="margin-top:32px;font-size:10px;color:var(--muted);letter-spacing:0.3em;">
+      LOCAL CO-OP · ONLINE CO-OP · PC &amp; CONSOLE
+    </p>
+  </div>
+</div>
+
+<footer>
+  <p>© 2025 TETHERED · BUILT WITH <span class="p">♥</span> AND <span class="g">CHAIN</span></p>
+</footer>
+
+<script>
+// Draw slime sprites using canvas (pixel art recreation)
+function drawPinkSlime(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const img = new Image();
+  img.src = '/mnt/user-data/uploads/pink_slime.png';
+  img.onload = () => {
+    // Draw first frame (left quarter of sprite sheet)
+    const frameW = img.width / 4;
+    ctx.drawImage(img, 0, 0, frameW, img.height, 0, 0, 64, 40);
+  };
+}
+
+function drawGreenSlime(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const img = new Image();
+  img.src = '/mnt/user-data/uploads/green_slime.png';
+  img.onload = () => {
+    const frameW = img.width / 4;
+    ctx.drawImage(img, 0, 0, frameW, img.height, 0, 0, 64, 40);
+  };
+}
+
+drawPinkSlime(document.getElementById('pinkCanvas'));
+drawGreenSlime(document.getElementById('greenCanvas'));
+
+// Animate health bar for demo
+let hp = 70;
+setInterval(() => {
+  hp = Math.max(10, Math.min(100, hp + (Math.random() > 0.5 ? -5 : 3)));
+  const bar = document.getElementById('hbar');
+  if (bar) bar.style.width = hp + '%';
+}, 2000);
+</script>
 </body>
 </html>
