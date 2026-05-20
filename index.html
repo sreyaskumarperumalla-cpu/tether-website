@@ -6,852 +6,7 @@
 <title>TETHERED — Two Players. One Chain. No Escape.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #1a1a18;
-    --bg2: #222220;
-    --surface: #2a2a27;
-    --border: #383835;
-    --neon-pink: #ff2d78;
-    --neon-green: #39ff57;
-    --pink-glow: rgba(255, 45, 120, 0.4);
-    --green-glow: rgba(57, 255, 87, 0.4);
-    --text: #e8e4d8;
-    --muted: #888880;
-    --gold: #c8a84b;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    overflow-x: hidden;
-    cursor: crosshair;
-  }
-
-  /* SCANLINE OVERLAY */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 9999;
-  }
-
-  /* ====== HERO ====== */
-  .hero {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    padding: 40px 20px;
-  }
-
-  .hero-bg-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 40px 40px;
-    opacity: 0.4;
-  }
-
-  .hero-bg-grid::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 80% 60% at 50% 50%,
-      transparent 20%,
-      var(--bg) 100%);
-  }
-
-  /* floating glow orbs */
-  .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    animation: drift 8s ease-in-out infinite alternate;
-  }
-  .orb-pink {
-    width: 400px; height: 400px;
-    background: var(--pink-glow);
-    top: -100px; left: -100px;
-    animation-delay: 0s;
-  }
-  .orb-green {
-    width: 350px; height: 350px;
-    background: var(--green-glow);
-    bottom: -80px; right: -80px;
-    animation-delay: -4s;
-  }
-
-  @keyframes drift {
-    from { transform: translate(0, 0) scale(1); }
-    to { transform: translate(60px, 40px) scale(1.1); }
-  }
-
-  .hero-content {
-    position: relative;
-    z-index: 2;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-  }
-
-  .hero-eyebrow {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.4em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 24px;
-    animation: fadeUp 0.6s ease both;
-  }
-
-  .hero-title {
-    font-family: 'Press Start 2P', monospace;
-    font-size: clamp(48px, 10vw, 110px);
-    line-height: 1;
-    letter-spacing: -2px;
-    background: linear-gradient(180deg,
-      #fff 0%,
-      var(--text) 40%,
-      var(--muted) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: fadeUp 0.6s 0.1s ease both;
-    position: relative;
-  }
-
-  .hero-title .t-pink { -webkit-text-fill-color: var(--neon-pink); filter: drop-shadow(0 0 20px var(--neon-pink)); }
-  .hero-title .t-green { -webkit-text-fill-color: var(--neon-green); filter: drop-shadow(0 0 20px var(--neon-green)); }
-
-  .hero-chain-row {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin: 32px 0 28px;
-    animation: fadeUp 0.6s 0.2s ease both;
-  }
-
-  /* Pixel art sprite frames using canvas-drawn backgrounds */
-  .sprite-container {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-
-  .player-sprite {
-    width: 64px;
-    height: 40px;
-    image-rendering: pixelated;
-    animation: bounce 0.8s ease-in-out infinite alternate;
-    filter: drop-shadow(0 0 12px currentColor);
-  }
-  .player-pink { animation-delay: 0s; color: var(--neon-pink); }
-  .player-green { animation-delay: -0.4s; color: var(--neon-green); }
-
-  @keyframes bounce {
-    from { transform: translateY(0); }
-    to { transform: translateY(-8px); }
-  }
-
-  .chain-visual {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0 12px;
-  }
-
-  .chain-link {
-    width: 8px; height: 8px;
-    background: var(--muted);
-    border-radius: 2px;
-    animation: chainPulse 1.2s ease-in-out infinite;
-  }
-  .chain-link:nth-child(even) { animation-delay: -0.6s; }
-
-  @keyframes chainPulse {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.3); background: var(--gold); }
-  }
-
-  .hero-tagline {
-    font-family: 'Press Start 2P', monospace;
-    font-size: clamp(9px, 2vw, 13px);
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    line-height: 1.8;
-    animation: fadeUp 0.6s 0.3s ease both;
-    max-width: 600px;
-  }
-  .hero-tagline .hl-pink { color: var(--neon-pink); }
-  .hero-tagline .hl-green { color: var(--neon-green); }
-
-  .hero-cta-row {
-    display: flex;
-    gap: 16px;
-    margin-top: 40px;
-    animation: fadeUp 0.6s 0.4s ease both;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .btn {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
-    padding: 14px 28px;
-    border: 2px solid;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    transition: all 0.15s;
-    image-rendering: pixelated;
-    position: relative;
-    letter-spacing: 0.05em;
-  }
-
-  .btn::after {
-    content: '';
-    position: absolute;
-    inset: 3px;
-    border: 1px solid rgba(255,255,255,0.1);
-    pointer-events: none;
-  }
-
-  .btn-pink {
-    background: var(--neon-pink);
-    border-color: var(--neon-pink);
-    color: #000;
-    box-shadow: 0 0 30px var(--pink-glow), inset 0 1px 0 rgba(255,255,255,0.3);
-  }
-  .btn-pink:hover {
-    background: #fff;
-    border-color: #fff;
-    box-shadow: 0 0 60px var(--pink-glow);
-    transform: translateY(-2px);
-  }
-
-  .btn-outline {
-    background: transparent;
-    border-color: var(--neon-green);
-    color: var(--neon-green);
-    box-shadow: 0 0 20px var(--green-glow);
-  }
-  .btn-outline:hover {
-    background: var(--neon-green);
-    color: #000;
-    box-shadow: 0 0 60px var(--green-glow);
-    transform: translateY(-2px);
-  }
-
-  .scroll-hint {
-    position: absolute;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.2em;
-    animation: fadeUp 0.6s 0.8s ease both, pulse 2s 1s ease infinite;
-    font-family: 'Press Start 2P', monospace;
-  }
-  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
-
-  /* ====== SECTION BASE ====== */
-  section {
-    padding: 100px 24px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
-  .section-label {
-    font-size: 10px;
-    letter-spacing: 0.4em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 16px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .section-label.pink { color: var(--neon-pink); }
-  .section-label.green { color: var(--neon-green); }
-
-  .section-title {
-    font-family: 'Press Start 2P', monospace;
-    font-size: clamp(20px, 4vw, 36px);
-    line-height: 1.4;
-    margin-bottom: 48px;
-  }
-
-  /* ====== DIVIDER ====== */
-  .divider {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg,
-      transparent,
-      var(--neon-pink) 20%,
-      var(--neon-green) 80%,
-      transparent);
-    opacity: 0.5;
-  }
-
-  /* ====== HOW IT WORKS ====== */
-  .how-wrap {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 100px 24px;
-  }
-
-  .steps-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 2px;
-    background: var(--border);
-  }
-
-  .step-card {
-    background: var(--bg2);
-    padding: 40px 28px;
-    position: relative;
-    overflow: hidden;
-    transition: background 0.2s;
-  }
-
-  .step-card:hover { background: var(--surface); }
-
-  .step-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-  }
-  .step-card.c-pink::before { background: var(--neon-pink); box-shadow: 0 0 20px var(--pink-glow); }
-  .step-card.c-green::before { background: var(--neon-green); box-shadow: 0 0 20px var(--green-glow); }
-  .step-card.c-gold::before { background: var(--gold); }
-
-  .step-num {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 36px;
-    color: var(--border);
-    margin-bottom: 24px;
-  }
-  .step-card.c-pink:hover .step-num { color: var(--neon-pink); }
-  .step-card.c-green:hover .step-num { color: var(--neon-green); }
-  .step-card.c-gold:hover .step-num { color: var(--gold); }
-
-  .step-title {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 12px;
-    margin-bottom: 16px;
-    line-height: 1.6;
-  }
-
-  .step-desc {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.8;
-  }
-
-  /* ====== ENEMIES SECTION ====== */
-  .enemies-wrap {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 100px 24px;
-  }
-
-  .enemies-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    align-items: center;
-  }
-
-  @media (max-width: 700px) {
-    .enemies-layout { grid-template-columns: 1fr; }
-  }
-
-  .enemies-info { }
-
-  .enemy-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 32px;
-  }
-
-  .enemy-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 16px;
-    border: 1px solid var(--border);
-    background: var(--bg2);
-    transition: all 0.2s;
-  }
-
-  .enemy-item:hover {
-    border-color: var(--neon-pink);
-    box-shadow: 0 0 20px rgba(255,45,120,0.15);
-  }
-
-  .enemy-dot {
-    width: 8px; height: 8px;
-    background: var(--neon-pink);
-    flex-shrink: 0;
-    margin-top: 5px;
-    box-shadow: 0 0 8px var(--neon-pink);
-    animation: blink 2s ease infinite;
-  }
-  .enemy-dot.green { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation-delay: -1s; }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  .enemy-text strong {
-    display: block;
-    font-size: 11px;
-    color: var(--text);
-    margin-bottom: 4px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-  }
-
-  .enemy-text span { font-size: 12px; color: var(--muted); }
-
-  /* sprite showcase box */
-  .sprite-box {
-    background: var(--bg2);
-    border: 2px solid var(--border);
-    border-radius: 0;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .sprite-box::before {
-    content: 'SPRITE SHEET';
-    position: absolute;
-    top: 12px; left: 16px;
-    font-size: 8px;
-    color: var(--muted);
-    letter-spacing: 0.3em;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .sprite-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .sprite-img {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-
-  .sprite-label {
-    font-size: 9px;
-    color: var(--muted);
-    text-align: center;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.2em;
-    margin-top: 8px;
-  }
-
-  .sprite-unit { display: flex; flex-direction: column; align-items: center; }
-
-  /* ====== POWERUPS ====== */
-  .powerups-wrap {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 100px 24px;
-  }
-
-  .powerups-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
-    background: var(--border);
-    margin-top: 48px;
-  }
-
-  @media (max-width: 600px) {
-    .powerups-grid { grid-template-columns: 1fr; }
-  }
-
-  .powerup-card {
-    background: var(--bg2);
-    padding: 36px 24px;
-    text-align: center;
-    transition: background 0.2s;
-    position: relative;
-  }
-  .powerup-card:hover { background: var(--surface); }
-
-  .powerup-icon {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 28px;
-    margin-bottom: 20px;
-    display: block;
-  }
-
-  .powerup-name {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    margin-bottom: 12px;
-  }
-
-  .powerup-desc {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.7;
-  }
-
-  .powerup-card .tag {
-    display: inline-block;
-    margin-top: 16px;
-    font-size: 9px;
-    padding: 4px 10px;
-    font-family: 'Press Start 2P', monospace;
-  }
-  .tag-pink { background: rgba(255,45,120,0.15); color: var(--neon-pink); border: 1px solid var(--neon-pink); }
-  .tag-green { background: rgba(57,255,87,0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
-  .tag-gold { background: rgba(200,168,75,0.15); color: var(--gold); border: 1px solid var(--gold); }
-
-  /* ====== RESOURCE SYSTEM ====== */
-  .resource-wrap {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 80px 24px;
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .resource-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    margin-top: 48px;
-  }
-
-  @media (max-width: 600px) { .resource-grid { grid-template-columns: 1fr; } }
-
-  .resource-card {
-    padding: 32px;
-    border: 1px solid var(--border);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .resource-card.pink { border-color: rgba(255,45,120,0.4); }
-  .resource-card.green { border-color: rgba(57,255,87,0.4); }
-
-  .resource-card.pink::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 100px; height: 100px;
-    background: radial-gradient(circle, var(--pink-glow), transparent 70%);
-  }
-
-  .resource-card.green::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 100px; height: 100px;
-    background: radial-gradient(circle, var(--green-glow), transparent 70%);
-  }
-
-  .resource-icon-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-
-  .resource-name {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 13px;
-  }
-
-  .resource-name.pink { color: var(--neon-pink); }
-  .resource-name.green { color: var(--neon-green); }
-
-  .resource-desc {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.8;
-  }
-
-  /* ====== FOOTER / CTA ====== */
-  .final-cta {
-    padding: 120px 24px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .final-cta-bg {
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 50% at 30% 50%, rgba(255,45,120,0.12), transparent),
-      radial-gradient(ellipse 60% 50% at 70% 50%, rgba(57,255,87,0.12), transparent);
-  }
-
-  .final-cta-content {
-    position: relative;
-    z-index: 1;
-    max-width: 700px;
-    margin: 0 auto;
-  }
-
-  .final-title {
-    font-family: 'Press Start 2P', monospace;
-    font-size: clamp(18px, 4vw, 36px);
-    line-height: 1.5;
-    margin-bottom: 24px;
-  }
-
-  .final-sub {
-    font-size: 14px;
-    color: var(--muted);
-    line-height: 1.8;
-    margin-bottom: 48px;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  /* ====== NAV ====== */
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(26,26,24,0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .nav-logo {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 14px;
-    color: var(--text);
-    text-decoration: none;
-    letter-spacing: 0.05em;
-  }
-  .nav-logo span.p { color: var(--neon-pink); }
-  .nav-logo span.g { color: var(--neon-green); }
-
-  .nav-links {
-    display: flex;
-    gap: 32px;
-    list-style: none;
-  }
-
-  .nav-links a {
-    font-size: 9px;
-    font-family: 'Press Start 2P', monospace;
-    color: var(--muted);
-    text-decoration: none;
-    letter-spacing: 0.1em;
-    transition: color 0.15s;
-  }
-
-  .nav-links a:hover { color: var(--text); }
-
-  @media (max-width: 500px) { .nav-links { display: none; } }
-
-  /* ====== FOOTER ====== */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 32px 24px;
-    text-align: center;
-    font-size: 10px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.2em;
-  }
-
-  footer span.p { color: var(--neon-pink); }
-  footer span.g { color: var(--neon-green); }
-
-  /* ANIMATIONS */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* chain animation for hero */
-  .hero-chain-animated {
-    position: absolute;
-    width: 100%;
-    height: 2px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: linear-gradient(90deg,
-      transparent 0%,
-      var(--gold) 40%,
-      var(--gold) 60%,
-      transparent 100%);
-    animation: chainSlide 3s linear infinite;
-    opacity: 0.3;
-  }
-
-  @keyframes chainSlide {
-    from { background-position: -100% 0; }
-    to { background-position: 100% 0; }
-  }
-
-  .wave-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid var(--border);
-    padding: 8px 16px;
-    margin-bottom: 24px;
-    font-size: 9px;
-    font-family: 'Press Start 2P', monospace;
-    color: var(--muted);
-    animation: fadeUp 0.6s 0s ease both;
-  }
-
-  .wave-badge .dot { width: 6px; height: 6px; background: var(--neon-green); animation: blink 1s ease infinite; }
-
-  /* health bar visual */
-  .health-bar-container {
-    margin-top: 16px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    padding: 8px;
-    position: relative;
-  }
-  .health-bar {
-    height: 12px;
-    background: linear-gradient(90deg, #c0392b, #e74c3c);
-    position: relative;
-    overflow: hidden;
-    transition: width 1s;
-  }
-  .health-bar::after {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: shimmer 2s ease infinite;
-  }
-  @keyframes shimmer { to { left: 200%; } }
-
-  .health-label { font-size: 9px; color: var(--muted); margin-bottom: 8px; font-family: 'Press Start 2P', monospace; }
-
-  /* pixel corners */
-  .px-corner {
-    position: relative;
-  }
-  .px-corner::before, .px-corner::after {
-    content: '';
-    position: absolute;
-    width: 8px; height: 8px;
-    border-color: var(--neon-pink);
-    border-style: solid;
-  }
-  .px-corner::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
-  .px-corner::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-
-  /* enemy rotate animation */
-  .rotate-slow { animation: rotateSlow 20s linear infinite; }
-  @keyframes rotateSlow { to { transform: rotate(360deg); } }
-
-  /* chain sprite used in hero */
-  .chain-sprites {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .cs { width: 10px; height: 10px; background: #888; border-radius: 1px; position: relative; }
-  .cs:nth-child(2n) { transform: rotate(90deg); }
-
-  /* sprite sheet display */
-  .ss-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .ss-frame {
-    image-rendering: pixelated;
-    border: 1px solid var(--border);
-    padding: 4px;
-    background: #111;
-  }
-
-  .anim-float {
-    animation: floatY 3s ease-in-out infinite;
-  }
-  @keyframes floatY {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-12px); }
-  }
-
-  .highlight-box {
-    border: 1px solid var(--border);
-    padding: 24px;
-    margin-top: 32px;
-    position: relative;
-    background: var(--bg2);
-  }
-
-  .highlight-box .hb-label {
-    position: absolute;
-    top: -10px;
-    left: 16px;
-    background: var(--bg2);
-    padding: 0 8px;
-    font-size: 9px;
-    font-family: 'Press Start 2P', monospace;
-    color: var(--neon-green);
-  }
-
-  /* visible sprite images from uploaded files */
-  .real-sprite {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -882,14 +37,11 @@
 
     <h1 class="hero-title">TETHERED</h1>
 
-    <!-- Sprite row: pink slime · chain · green slime -->
+    <!-- Hero: slime sprites + chain links -->
     <div class="hero-chain-row">
-      <!-- Pink slime - frame 1 (left quarter of sprite sheet) -->
       <div class="sprite-container player-pink">
-        <canvas id="pinkCanvas" width="64" height="40" class="sprite-img"></canvas>
+        <img src="pink_slime.png" alt="Player 1" style="height:48px;width:auto;image-rendering:pixelated;">
       </div>
-
-      <!-- Chain visual -->
       <div class="chain-visual">
         <div class="chain-link"></div>
         <div class="chain-link"></div>
@@ -902,16 +54,14 @@
         <div class="chain-link"></div>
         <div class="chain-link"></div>
       </div>
-
-      <!-- Green slime -->
       <div class="sprite-container player-green">
-        <canvas id="greenCanvas" width="64" height="40" class="sprite-img"></canvas>
+        <img src="green_slime.png" alt="Player 2" style="height:48px;width:auto;image-rendering:pixelated;">
       </div>
     </div>
 
     <p class="hero-tagline">
-      Two players. <span class="hl-pink">One chain.</span> Infinite waves.<br>
-      Trap enemies between you — or <span class="hl-green">die together.</span>
+      Two players. <span class="hl-pink">One chain.</span> Endless waves.<br>
+      Trap, shoot, and outlast — or <span class="hl-green">fall together.</span>
     </p>
 
     <div class="hero-cta-row">
@@ -931,43 +81,42 @@
   <div class="steps-grid">
     <div class="step-card c-pink">
       <div class="step-num">01</div>
-      <div class="step-title">STAY<br>CONNECTED</div>
-      <p class="step-desc">You and your partner are bound by a chain. Move apart to stretch it — move together to let enemies slip past. Distance is your weapon.</p>
+      <div class="step-title">PICK YOUR<br>KEYS</div>
+      <p class="step-desc">Player 1 moves with WASD. Player 2 moves with IJKL. You are always tethered — neither of you goes anywhere alone.</p>
     </div>
     <div class="step-card c-green">
       <div class="step-num">02</div>
-      <div class="step-title">TRAP &amp;<br>DESTROY</div>
-      <p class="step-desc">Position so the chain catches enemies between you. Contact kills — but only when they're fully ensnared. Coordination is everything.</p>
+      <div class="step-title">KILL WITH<br>THE CHAIN</div>
+      <p class="step-desc">Pass the tether over enemies to destroy them. Your players also fire automatic projectiles — no manual aim required, just stay in position.</p>
     </div>
     <div class="step-card c-gold">
       <div class="step-num">03</div>
-      <div class="step-title">SURVIVE<br>THE WAVE</div>
-      <p class="step-desc">Enemies come in increasingly brutal waves. Collect power-ups, spend shared gold, and keep your shared health pool above zero.</p>
+      <div class="step-title">USE YOUR<br>ABILITIES</div>
+      <p class="step-desc">Press certain buttons simultaneously to trigger shared abilities. They draw from a shared energy pool that slowly regenerates — use them wisely.</p>
     </div>
     <div class="step-card c-pink">
       <div class="step-num">04</div>
-      <div class="step-title">SPEND<br>WISELY</div>
-      <p class="step-desc">Every kill earns shared gold. Agree on upgrades — both players draw from the same pool. Greed kills. Generosity wins.</p>
+      <div class="step-title">CHASE THE<br>HIGH SCORE</div>
+      <p class="step-desc">Every enemy you kill adds to your score. Survive as many waves as possible — the game ends the moment either player loses all their health.</p>
     </div>
   </div>
 
-  <!-- Shared resource visualization -->
   <div class="highlight-box" style="margin-top:40px;">
     <span class="hb-label">SHARED RESOURCE SYSTEM</span>
     <div class="resource-grid" style="margin-top:16px;">
       <div>
-        <div class="health-label">❤ SHARED HEALTH</div>
+        <div class="health-label">❤ PLAYER HEALTH</div>
         <div class="health-bar-container">
           <div class="health-bar" id="hbar" style="width:70%;"></div>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7;">Both players share one health pool. When it hits zero, the run ends for both — no solo saves.</p>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7;">Each player has their own health pool. If either player reaches zero, the run ends for both — there are no revives. Protect each other at all costs.</p>
       </div>
       <div>
-        <div class="health-label" style="color:var(--gold);">◆ SHARED GOLD</div>
+        <div class="health-label" style="color:var(--neon-green);">⚡ SHARED ENERGY</div>
         <div class="health-bar-container">
-          <div class="health-bar" style="width:45%;background:linear-gradient(90deg,#a0782a,var(--gold));"></div>
+          <div class="health-bar" id="ebar" style="width:55%;background:linear-gradient(90deg,#1a7a2a,var(--neon-green));"></div>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7;">Kills award gold to the shared pool. Either player can spend it — trust your partner.</p>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7;">Abilities consume shared energy. It regenerates over time — coordinate when to use it so you're never caught empty against a big wave.</p>
       </div>
     </div>
   </div>
@@ -983,76 +132,95 @@
   <div class="enemies-layout">
     <div class="enemies-info">
       <p style="font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:32px;">
-        Creatures from the deep emerge in relentless waves. Each type has a unique movement pattern — learn them or perish.
+        Creatures emerge in relentless waves. Each type behaves differently — learn their patterns or get overwhelmed.
       </p>
 
       <ul class="enemy-list">
         <li class="enemy-item">
           <div class="enemy-dot"></div>
           <div class="enemy-text">
-            <strong>THE SHAMBLER</strong>
-            <span>Slow, predictable. Moves in straight lines toward the nearest player. Easy to trap — watch for groups.</span>
+            <strong>THE DASHER</strong>
+            <span>Lunges at players in sudden bursts. Fast and aggressive — hard to trap with the tether alone. Use abilities or projectiles to intercept mid-dash.</span>
           </div>
         </li>
         <li class="enemy-item">
           <div class="enemy-dot green"></div>
           <div class="enemy-text">
-            <strong>THE DARTER</strong>
-            <span>Fast and erratic. Changes direction unpredictably. Requires both players to anticipate its path.</span>
+            <strong>THE BRUTE</strong>
+            <span>Slow, massive, and built to absorb punishment. Takes multiple tether passes or a barrage of projectiles to bring down. Don't let it corner a player.</span>
           </div>
         </li>
         <li class="enemy-item">
           <div class="enemy-dot"></div>
           <div class="enemy-text">
-            <strong>THE BEHEMOTH</strong>
-            <span>Large and armored. Takes multiple chain wraps to eliminate. Tanks through careless formations.</span>
-          </div>
-        </li>
-        <li class="enemy-item">
-          <div class="enemy-dot green"></div>
-          <div class="enemy-text">
-            <strong>THE SWARM</strong>
-            <span>Dozens of tiny enemies moving in formation. Chain must be swept through the group rapidly.</span>
+            <strong>THE SPITTER</strong>
+            <span>Keeps its distance and launches projectiles at both players. Stay mobile and close the gap fast — let it linger and you'll take chip damage all wave.</span>
           </div>
         </li>
       </ul>
     </div>
 
-    <!-- Sprite box showing uploaded sprites -->
+    <!-- Sprite box: show images at natural scaled size, no clipping tricks -->
     <div class="sprite-box px-corner">
-      <div style="display:flex;flex-direction:column;gap:24px;width:100%;align-items:center;">
+      <div style="display:flex;flex-direction:column;gap:28px;width:100%;align-items:center;">
 
         <div class="sprite-unit">
-          <div style="overflow:hidden;width:80px;height:80px;display:inline-block;filter:drop-shadow(0 0 8px rgba(200,168,75,0.6));">
-            <img src="enemy.png" class="real-sprite"
-                 style="height:80px;width:auto;max-width:none;display:block;object-fit:none;"
-                 alt="Enemy sprite">
-          </div>
-          <div class="sprite-label">ENEMY · 5 ANIMATION FRAMES</div>
+          <img src="enemy.png" alt="Enemy sprite"
+               style="height:64px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 8px rgba(200,168,75,0.7));">
+          <div class="sprite-label">ENEMY · ANIMATION FRAMES</div>
         </div>
 
         <div style="width:100%;height:1px;background:var(--border);"></div>
 
         <div class="sprite-unit">
-          <div style="overflow:hidden;width:64px;height:64px;display:inline-block;filter:drop-shadow(0 0 10px rgba(57,255,87,0.5));">
-            <img src="green_slime.png" class="real-sprite"
-                 style="height:64px;width:auto;max-width:none;display:block;object-fit:none;"
-                 alt="Green slime">
-          </div>
-          <div class="sprite-label" style="color:var(--neon-green);">PLAYER 2 · GREEN SLIME</div>
+          <img src="green_slime.png" alt="Green slime"
+               style="height:56px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(57,255,87,0.6));">
+          <div class="sprite-label" style="color:var(--neon-green);">PLAYER 2 · GREEN SLIME · IJKL</div>
         </div>
 
         <div class="sprite-unit">
-          <div style="overflow:hidden;width:64px;height:64px;display:inline-block;filter:drop-shadow(0 0 10px rgba(255,45,120,0.5));">
-            <img src="pink_slime.png" class="real-sprite"
-                 style="height:64px;width:auto;max-width:none;display:block;object-fit:none;"
-                 alt="Pink slime">
-          </div>
-          <div class="sprite-label" style="color:var(--neon-pink);">PLAYER 1 · PINK SLIME</div>
+          <img src="pink_slime.png" alt="Pink slime"
+               style="height:56px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(255,45,120,0.6));">
+          <div class="sprite-label" style="color:var(--neon-pink);">PLAYER 1 · PINK SLIME · WASD</div>
         </div>
 
       </div>
     </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ABILITIES -->
+<div id="abilities" class="abilities-wrap">
+  <div class="section-label green">// ABILITIES</div>
+  <h2 class="section-title">COMBINED<br>POWERS</h2>
+
+  <p style="font-size:14px;color:var(--muted);line-height:1.8;max-width:600px;margin-bottom:8px;">
+    When both players press certain buttons at the same time, you trigger a shared ability. These burn shared energy — coordinate or waste them.
+  </p>
+
+  <div class="abilities-grid">
+    <div class="ability-card">
+      <div class="ability-key">SYNC INPUT</div>
+      <div class="ability-name">CHAIN LASH</div>
+      <p class="ability-desc">Snap the tether outward in a burst, dealing heavy damage to all enemies caught along its length. Best used when you're surrounded.</p>
+    </div>
+    <div class="ability-card">
+      <div class="ability-key">SYNC INPUT</div>
+      <div class="ability-name">ENERGY SHIELD</div>
+      <p class="ability-desc">Both players briefly become invulnerable. Use it to survive a Spitter barrage or tank through a Brute when health is low.</p>
+    </div>
+    <div class="ability-card">
+      <div class="ability-key">SYNC INPUT</div>
+      <div class="ability-name">OVERDRIVE</div>
+      <p class="ability-desc">Supercharge both players' projectile output for a short window. Shreds Brutes and clears groups of Dashers before they can close in.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;border:1px solid var(--border);padding:20px 24px;background:var(--bg2);display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="font-size:9px;font-family:'Press Start 2P',monospace;color:var(--neon-green);">⚡ ENERGY REGEN</div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;">Shared energy refills automatically over time. You can't rush it — plan your ability usage around wave timing, not desperation.</p>
   </div>
 </div>
 
@@ -1064,51 +232,79 @@
   <h2 class="section-title">POWERUPS &amp;<br>PICKUPS</h2>
 
   <div style="display:flex;justify-content:center;margin-bottom:40px;">
-    <div style="overflow:hidden;width:80px;height:80px;display:inline-block;filter:drop-shadow(0 0 16px rgba(57,255,87,0.4));">
-      <img src="powerups.png" class="real-sprite anim-float"
-           style="height:80px;width:auto;max-width:none;display:block;object-fit:none;"
-           alt="Power-up item">
-    </div>
+    <img src="powerups.png" alt="Power-up items"
+         class="anim-float"
+         style="height:72px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 16px rgba(57,255,87,0.5));">
   </div>
+
+  <p style="font-size:14px;color:var(--muted);line-height:1.8;max-width:600px;margin-bottom:8px;">
+    Items spawn randomly across the arena during waves. Grab them fast — they disappear. Every one counts.
+  </p>
 
   <div class="powerups-grid">
     <div class="powerup-card">
       <span class="powerup-icon">🍎</span>
       <div class="powerup-name">RED APPLE</div>
-      <p class="powerup-desc">Restores a chunk of your shared health pool. Prioritize when both players are low.</p>
-      <span class="tag tag-pink">+HEALTH</span>
+      <p class="powerup-desc">Triggers health regeneration for both players. Prioritize when either player's health is dropping — losing one ends the run.</p>
+      <span class="tag tag-pink">+HEALTH REGEN</span>
     </div>
     <div class="powerup-card">
       <span class="powerup-icon">🍐</span>
       <div class="powerup-name">GOLDEN PEAR</div>
-      <p class="powerup-desc">Grants a burst of shared gold. Appear rarely — agree on how to spend before picking up.</p>
-      <span class="tag tag-gold">+GOLD</span>
+      <p class="powerup-desc">Boosts movement speed for both players temporarily. Use the extra mobility to reposition, chase down Dashers, or escape a Brute.</p>
+      <span class="tag tag-gold">+SPEED</span>
     </div>
     <div class="powerup-card">
       <span class="powerup-icon">🍌</span>
       <div class="powerup-name">BANANA</div>
-      <p class="powerup-desc">Temporarily extends your chain length, letting you trap larger groups with one sweep.</p>
-      <span class="tag tag-green">+RANGE</span>
+      <p class="powerup-desc">Briefly extends your tether range, letting you sweep through wider groups or catch enemies that are just out of reach.</p>
+      <span class="tag tag-green">+TETHER RANGE</span>
     </div>
   </div>
 
-  <!-- Chain sprite showcase -->
   <div style="margin-top:48px;text-align:center;">
     <div class="section-label" style="margin-bottom:16px;">// THE CHAIN</div>
-    <div style="overflow:hidden;width:70px;height:70px;display:inline-block;filter:drop-shadow(0 0 12px rgba(200,168,75,0.5));">
-      <img src="chain.png" class="real-sprite"
-           style="height:70px;width:auto;max-width:none;display:block;object-fit:none;"
-           alt="Chain sprite">
-    </div>
+    <img src="chain.png" alt="Chain sprite"
+         style="height:64px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 12px rgba(200,168,75,0.6));">
     <p style="font-size:12px;color:var(--muted);margin-top:16px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.8;">
-      The chain is your bond — and your weapon. Stretch it between enemies, sweep it through crowds, or let it snap tight to finish off trapped foes.
+      The chain is your bond — and your weapon. Pass it over enemies to destroy them, sweep it through clusters, or snap it tight to punish anything caught in between.
     </p>
   </div>
 </div>
 
 <div class="divider"></div>
 
-<!-- HEALTH SYSTEM callout -->
+<!-- PERMANENT UPGRADES -->
+<div class="upgrades-wrap">
+  <div class="section-label pink">// PROGRESSION</div>
+  <h2 class="section-title">PERMANENT<br>UPGRADES</h2>
+
+  <p style="font-size:14px;color:var(--muted);line-height:1.8;max-width:600px;margin-bottom:8px;">
+    Every few waves, the game pauses and you choose one permanent upgrade. These stack — pick smart and your build compounds over time.
+  </p>
+
+  <div class="upgrades-grid">
+    <div class="upgrade-card">
+      <span class="upgrade-icon">🔗</span>
+      <div class="upgrade-name">LONGER TETHER</div>
+      <p class="upgrade-desc">Permanently increases the maximum distance between players. Cover more ground and trap larger groups of enemies with a single sweep.</p>
+    </div>
+    <div class="upgrade-card">
+      <span class="upgrade-icon">💥</span>
+      <div class="upgrade-name">MORE DAMAGE</div>
+      <p class="upgrade-desc">Boosts both tether kill damage and projectile output permanently. Cuts down Brutes faster and melts swarms before they stack up.</p>
+    </div>
+    <div class="upgrade-card">
+      <span class="upgrade-icon">❤</span>
+      <div class="upgrade-name">FASTER REGEN</div>
+      <p class="upgrade-desc">Increases the passive health regeneration rate for both players. The longer you survive, the more this compounds — a strong pick in later waves.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- HEALTH SYSTEM -->
 <div class="resource-wrap" style="max-width:100%;padding:80px 24px;">
   <div style="max-width:1100px;margin:0 auto;">
     <div class="section-label pink">// RESOURCES</div>
@@ -1117,14 +313,11 @@
     <div class="resource-grid">
       <div class="resource-card pink">
         <div class="resource-icon-row">
-          <div style="overflow:hidden;width:48px;height:48px;display:inline-block;filter:drop-shadow(0 0 8px #c0392b);">
-            <img src="health.png" class="real-sprite"
-                 style="height:48px;width:auto;max-width:none;display:block;object-fit:none;"
-                 alt="Health icon">
-          </div>
-          <div class="resource-name pink">ENERGY</div>
+          <img src="health.png" alt="Health"
+               style="height:48px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 8px #c0392b);">
+          <div class="resource-name pink">HEALTH</div>
         </div>
-        <p class="resource-desc">A single shared health pool for both players. No revives, no second chances — when energy runs out, the run is over. Watch each other's backs.</p>
+        <p class="resource-desc">Each player has their own health pool. The run ends the moment either player hits zero — there are no revives. Keep each other alive, or it's over for both.</p>
         <div style="margin-top:20px;display:flex;gap:4px;">
           <div style="width:16px;height:16px;background:#e74c3c;box-shadow:0 0 8px #e74c3c;"></div>
           <div style="width:16px;height:16px;background:#e74c3c;box-shadow:0 0 8px #e74c3c;"></div>
@@ -1135,12 +328,12 @@
       </div>
       <div class="resource-card green">
         <div class="resource-icon-row">
-          <div style="font-size:36px;">◆</div>
-          <div class="resource-name green">GOLD</div>
+          <div style="font-size:36px;">⚡</div>
+          <div class="resource-name green">ENERGY</div>
         </div>
-        <p class="resource-desc">Earned from every enemy defeated. Pooled between both players — upgrades, powerup slots, and chain enhancements all draw from here. Communicate.</p>
-        <div style="margin-top:20px;font-family:'Press Start 2P',monospace;font-size:18px;color:var(--gold);">
-          ◆◆◆◆◆◆◆
+        <p class="resource-desc">Abilities burn from a single shared energy pool. It regenerates passively over time. Both players draw from the same reserve — talk before you spend it.</p>
+        <div style="margin-top:20px;font-family:'Press Start 2P',monospace;font-size:18px;color:var(--neon-green);">
+          ⚡⚡⚡⚡⚡⚡⚡
         </div>
       </div>
     </div>
@@ -1149,10 +342,8 @@
 
 <!-- FLOOR TEXTURE BAND -->
 <div style="width:100%;height:80px;overflow:hidden;opacity:0.3;border-top:1px solid var(--border);">
-  <img src="floor.png"
-       class="real-sprite"
-       style="width:100%;height:80px;object-fit:cover;"
-       alt="Floor texture">
+  <img src="floor.png" alt="Floor"
+       style="width:100%;height:80px;object-fit:cover;image-rendering:pixelated;">
 </div>
 
 <!-- FINAL CTA -->
@@ -1163,17 +354,17 @@
     <h2 class="final-title">
       CONNECT.<br>
       <span style="color:var(--neon-pink);">SURVIVE.</span><br>
-      <span style="color:var(--neon-green);">CONQUER.</span>
+      <span style="color:var(--neon-green);">DOMINATE.</span>
     </h2>
     <p class="final-sub">
-      Grab a friend, pick your color, and find out what you're made of when the chain is all that stands between you and the void.
+      Grab a friend, split the keyboard, and find out how long your chain holds when the waves keep coming.
     </p>
     <div class="hero-cta-row" style="justify-content:center;">
-      <a href="#" class="btn btn-pink">▶ PLAY FREE</a>
-      <a href="#" class="btn btn-outline">WISHLIST</a>
+      <a href="https://tethered-game-jam.netlify.app" class="btn btn-pink">▶ PLAY FREE</a>
+      <a href="#" class="btn btn-outline">How to Play</a>
     </div>
     <p style="margin-top:32px;font-size:10px;color:var(--muted);letter-spacing:0.3em;">
-      LOCAL CO-OP · ONLINE CO-OP · PC &amp; CONSOLE
+      LOCAL CO-OP · SHARED KEYBOARD · WAVE SURVIVAL
     </p>
   </div>
 </div>
@@ -1183,40 +374,21 @@
 </footer>
 
 <script>
-// Draw slime sprites using canvas (pixel art recreation)
-function drawPinkSlime(canvas) {
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  const img = new Image();
-  img.src = 'pink_slime.png';
-  img.onload = () => {
-    // Draw first frame (left quarter of sprite sheet)
-    const frameW = img.width / 4;
-    ctx.drawImage(img, 0, 0, frameW, img.height, 0, 0, 64, 40);
-  };
-}
-
-function drawGreenSlime(canvas) {
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  const img = new Image();
-  img.src = 'green_slime.png';
-  img.onload = () => {
-    const frameW = img.width / 4;
-    ctx.drawImage(img, 0, 0, frameW, img.height, 0, 0, 64, 40);
-  };
-}
-
-drawPinkSlime(document.getElementById('pinkCanvas'));
-drawGreenSlime(document.getElementById('greenCanvas'));
-
-// Animate health bar for demo
+// Animate health bar
 let hp = 70;
 setInterval(() => {
   hp = Math.max(10, Math.min(100, hp + (Math.random() > 0.5 ? -5 : 3)));
   const bar = document.getElementById('hbar');
   if (bar) bar.style.width = hp + '%';
 }, 2000);
+
+// Animate energy bar
+let ep = 55;
+setInterval(() => {
+  ep = Math.max(15, Math.min(100, ep + (Math.random() > 0.35 ? 4 : -12)));
+  const bar = document.getElementById('ebar');
+  if (bar) bar.style.width = ep + '%';
+}, 2500);
 </script>
 </body>
 </html>
